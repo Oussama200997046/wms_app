@@ -24,26 +24,11 @@ jobs:
           flutter-version: '3.19.x'
           channel: 'stable'
 
-      - name: Create pubspec if missing
+      - name: Fix Project Structure (Create if missing)
         run: |
-          if [ ! -f pubspec.yaml ]; then
-            cat << 'EOF' > pubspec.yaml
-          name: wms_app
-          description: "WMS App for Algeria Post"
-          publish_to: 'none'
-          version: 1.0.0+1
-
-          environment:
-            sdk: '>=3.0.0 <4.0.0'
-
-          dependencies:
-            flutter:
-              sdk: flutter
-            cupertino_icons: ^1.0.6
-
-          flutter:
-            uses-material-design: true
-          EOF
+          if [ ! -f android/build.gradle ]; then
+            echo "Creating a valid Flutter project structure..."
+            flutter create . --org com.example --project-name wms_app --platforms android
           fi
 
       - name: Get Dependencies
