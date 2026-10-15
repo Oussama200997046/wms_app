@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ "main", "رئيسي" ]
+    branches: [ "main", "master", "رئيسي" ]
   workflow_dispatch:
 
 jobs:
@@ -26,8 +26,9 @@ jobs:
 
       - name: Create Flutter Project Structure
         run: |
-          mkdir -p test
-          cat << 'EOF' > pubspec.yaml
+          mkdir -p lib test
+          if [ ! -f pubspec.yaml ]; then
+            cat << 'EOF' > pubspec.yaml
           name: wms_app
           description: "WMS App for Algeria Post"
           publish_to: 'none'
@@ -44,10 +45,11 @@ jobs:
           flutter:
             uses-material-design: true
           EOF
+          fi
           flutter create --template=app . --force
 
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
