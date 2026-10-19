@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const AlgeriaPostWMSApp());
@@ -15,9 +16,179 @@ class AlgeriaPostWMSApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,
-        fontFamily: 'Roboto',
       ),
-      home: const MainHomeScreen(),
+      home: const AuthCheckScreen(),
+    );
+  }
+}
+
+/// شاشة التحقق من وجود كلمة سر أو طلب إنشائها / إدخالها
+class AuthCheckScreen extends StatefulWidget {
+  const AuthCheckScreen({super.key});
+
+  @override
+  State<AuthCheckScreen> createState() => _AuthCheckScreenState();
+}
+
+class _AuthCheckScreenState extends State<AuthCheckScreen> {
+  bool _isLoading = true;
+  bool _hasPin = false;
+
+  final TextEditingController _pinController = TextEditingController();
+  final TextEditingController _confirmPinController = TextEditingController();
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPinStatus();
+  }
+
+  Future<void> _checkPinStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPin = prefs.getString('app_pin');
+    setState(() {
+      _hasPin = savedPin != null && savedPin.isNotEmpty;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _savePin() async {
+    if (_pinController.text.length < 4) {
+      setState(() {
+        _errorMessage = 'كلمة السر يجب أن تتكون من 4 أرقام على الأقل';
+      });
+      return;
+    }
+    if (_pinController.text != _confirmPinController.text) {
+      setState(() {
+        _errorMessage = 'كلمتا السر غير متطابقتين';
+      });
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('app_pin', _pinController.text);
+
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainHomeScreen()),
+      );
+    }
+  }
+
+  Future<void> _verifyPin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPin = prefs.getString('app_pin');
+
+    if (_pinController.text == savedPin) {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainHomeScreen()),
+        );
+      }
+    } else {
+      setState(() {
+        _errorMessage = 'كلمة السر غير صحيحة!';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.blue.shade50,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Center(
+            child: SingleChildScrollView(
+              child: Card(
+                elevation: 6,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.lock_person, size: 70, color: Colors.blueAccent),
+                      const SizedBox(height: 15),
+                      Text(
+                        _hasPin ? 'تأمين المخزن - بريد الجزائر' : 'إنشاء كلمة سر جديدة',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        _hasPin
+                            ? 'أدخل كلمة السر الخاصة بك للدخول للتطبيق'
+                            : 'قم بإنشاء كلمة سر لحماية بيانات المخزن والحصص',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _pinController,
+                        obscureText: true,
+                        keyboardType: TextInputType.number,
+                        maxLength: 6,
+                        decoration: InputDecoration(
+                          labelText: _hasPin ? 'كلمة السر' : 'كلمة السر الجديدة',
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.key),
+                          counterText: '',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (!_hasPin)
+                        TextField(
+                          controller: _confirmPinController,
+                          obscureText: true,
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          decoration: const InputDecoration(
+                            labelText: 'تأكيد كلمة السر',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.key_outlined),
+                            counterText: '',
+                          ),
+                        ),
+                      if (_errorMessage.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _errorMessage,
+                          style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _hasPin ? _verifyPin : _savePin,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: Text(
+                          _hasPin ? 'دخول للتطبيق' : 'حفظ وإنشاء كلمة السر',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -120,7 +291,7 @@ class _PalletCalculatorScreenState extends State<PalletCalculatorScreen> {
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Card(
                 color: Colors.blue.shade50,
@@ -129,7 +300,7 @@ class _PalletCalculatorScreenState extends State<PalletCalculatorScreen> {
                   child: Text(
                     'الحساب الشبكي: (أفقي × عمودي) - الكراتين الناقصة',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueDark),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent),
                   ),
                 ),
               ),
@@ -293,7 +464,7 @@ class _BonDeCommandeCheckScreenState extends State<BonDeCommandeCheckScreen> {
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextField(
                 controller: _targetQuantityController,
@@ -385,7 +556,7 @@ class _BonDeCommandeCheckScreenState extends State<BonDeCommandeCheckScreen> {
   }
 }
 
-/// 3. شاشة جدول حصص الولايات والتتشطيب الرقمي
+/// 3. شاشة جدول حصص الولايات والتشطيب الرقمي
 class QuotaTableScreen extends StatefulWidget {
   const QuotaTableScreen({super.key});
 
