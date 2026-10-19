@@ -1,5 +1,5 @@
 name: wms_app
-description: "A new Flutter project for Algeria Post WMS."
+description: "A new Flutter project for Algeria Post"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
