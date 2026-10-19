@@ -1,371 +1,481 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const WmsApp());
+  runApp(const AlgeriaPostWMSApp());
 }
 
-class WmsApp extends StatelessWidget {
-  const WmsApp({super.key});
+class AlgeriaPostWMSApp extends StatelessWidget {
+  const AlgeriaPostWMSApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Algeria Post WMS',
       debugShowCheckedModeBanner: false,
-      title: 'إدارة مخازن بريد الجزائر',
       theme: ThemeData(
-        primarySwatch: Colors.amber,
-        scaffoldBackgroundColor: const Color(0xF2F4F7FF),
+        primarySwatch: Colors.blue,
         useMaterial3: true,
+        fontFamily: 'Roboto',
       ),
-      home: const LoginScreen(),
+      home: const MainHomeScreen(),
     );
   }
 }
 
-// 1. شاشة تسجيل الدخول
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class MainHomeScreen extends StatefulWidget {
+  const MainHomeScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<MainHomeScreen> createState() => _MainHomeScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _usernameController = TextEditingController(text: "Oussama");
-  final _passwordController = TextEditingController(text: "123456");
-  bool _isLoading = false;
+class _MainHomeScreenState extends State<MainHomeScreen> {
+  int _selectedIndex = 0;
 
-  void _login() {
-    if (_usernameController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
-      setState(() => _isLoading = true);
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainDashboard()),
-        );
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء إدخال البيانات المطلوبة')),
-      );
-    }
-  }
+  final List<Widget> _screens = [
+    const QuotaTableScreen(),
+    const PalletCalculatorScreen(),
+    const BonDeCommandeCheckScreen(),
+    const RegistreScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.amber[700],
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.markunread_mailbox, size: 70, color: Colors.white),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'بريد الجزائر',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87),
-                ),
-                const Text(
-                  'نظام إدارة المخازن والشحنات (WMS)',
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-                const SizedBox(height: 40),
-                TextField(
-                  controller: _usernameController,
-                  decoration: InputDecoration(
-                    labelText: 'اسم المستخدم / الرقم الوظيفي',
-                    prefixIcon: const Icon(Icons.person),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'كلمة المرور',
-                    prefixIcon: const Icon(Icons.lock),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber[700],
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: _isLoading ? null : _login,
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('تسجيل الدخول', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
-            ),
+      body: _screens[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blueAccent,
+        unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.table_chart),
+            label: 'جدول الحصص',
           ),
-        ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calculate),
+            label: 'حاسبة الباليطة',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment_turned_in),
+            label: 'مطابقة الطلب',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book),
+            label: 'السجل',
+          ),
+        ],
       ),
     );
   }
 }
 
-// 2. الواجهة الرئيسية والتنقل
-class MainDashboard extends StatefulWidget {
-  const MainDashboard({super.key});
+/// 1. شاشة حاسبة الباليطة الشبكية + التعامل مع النقص
+class PalletCalculatorScreen extends StatefulWidget {
+  const PalletCalculatorScreen({super.key});
 
   @override
-  State<MainDashboard> createState() => _MainDashboardState();
+  State<PalletCalculatorScreen> createState() => _PalletCalculatorScreenState();
 }
 
-class _MainDashboardState extends State<MainDashboard> {
-  int _currentIndex = 0;
+class _PalletCalculatorScreenState extends State<PalletCalculatorScreen> {
+  final TextEditingController _horizontalController = TextEditingController();
+  final TextEditingController _verticalController = TextEditingController();
+  final TextEditingController _missingBoxesController = TextEditingController();
 
-  final List<Map<String, String>> _shipments = [
-    {'code': 'DZ-982341-SFP', 'type': 'طرد بريدي وارد', 'status': 'مكتمل', 'date': '2026-10-19'},
-    {'code': 'DZ-104928-EXP', 'type': 'شحنة عاجلة Express', 'status': 'قيد المعالجة', 'date': '2026-10-19'},
-    {'code': 'DZ-550192-SFP', 'type': 'مواد مخزنية', 'status': 'مكتمل', 'date': '2026-10-18'},
-  ];
+  int _selectedPackSize = 1000;
+  int _totalCartons = 0;
+  int _missingCartons = 0;
+  int _netCartons = 0;
+  int _totalPapers = 0;
 
-  final TextEditingController _shipmentController = TextEditingController();
+  void _calculate() {
+    int horizontal = int.tryParse(_horizontalController.text) ?? 0;
+    int vertical = int.tryParse(_verticalController.text) ?? 0;
+    _missingCartons = int.tryParse(_missingBoxesController.text) ?? 0;
 
-  void _addShipment(String code, String type) {
     setState(() {
-      _shipments.insert(0, {
-        'code': code,
-        'type': type,
-        'status': 'قيد المعالجة',
-        'date': DateTime.now().toString().substring(0, 10),
-      });
+      _totalCartons = horizontal * vertical;
+      _netCartons = _totalCartons - _missingCartons;
+      if (_netCartons < 0) _netCartons = 0;
+      _totalPapers = _netCartons * _selectedPackSize;
     });
-  }
-
-  void _openScannerDialog() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.qr_code_scanner, size: 60, color: Colors.amber),
-              const SizedBox(height: 10),
-              const Text(
-                'مسح الباركود / QR',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text('قم بتوجيه الكاميرا نحو الرمز الخاص بالشحنة'),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber[700],
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-                icon: const Icon(Icons.camera_alt, color: Colors.white),
-                label: const Text('محاكاة مسح شحنة جديدة', style: TextStyle(color: Colors.white)),
-                onPressed: () {
-                  Navigator.pop(context);
-                  final randomCode = 'DZ-${100000 + DateTime.now().millisecond % 899999}-WMS';
-                  _addShipment(randomCode, 'طرد جديد مسجل بالكاميرا');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('تمت إضافة الشحنة: $randomCode')),
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إدارة مخازن بريد الجزائر', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.amber[700],
+        title: const Text('حاسبة الباليطة والمخزون'),
+        backgroundColor: Colors.blueAccent,
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-            },
-          ),
-        ],
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          _buildDashboardHome(),
-          _buildShipmentsList(),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.amber[700],
-        onPressed: _openScannerDialog,
-        child: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 30),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: Colors.amber[800],
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'الرئيسية'),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'المخزن بالشحنات'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDashboardHome() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('مرحباً بك، أسامة 👋', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 5),
-          const Text('ملخص نشاط المخزن اليوم', style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 16),
-          Row(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAlignment.stretch,
             children: [
-              _buildStatCard('إجمالي الشحنات', '${_shipments.length}', Colors.blue, Icons.archive),
-              const SizedBox(width: 10),
-              _buildStatCard('قيد المعالجة', '${_shipments.where((s) => s['status'] == 'قيد المعالجة').length}', Colors.orange, Icons.pending_actions),
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Text('عمليات سريعة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: const Icon(Icons.add_a_photo, color: Colors.amber),
-              title: const Text('مسح باركود شحنة جديدة'),
-              subtitle: const Text('إدخال مباشر عبر كاميرا الهاتف'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: _openScannerDialog,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String title, String count, Color color, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 30),
-            const SizedBox(height: 10),
-            Text(count, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
-            Text(title, style: const TextStyle(fontSize: 13, color: Colors.black87)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildShipmentsList() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _shipmentController,
-                  decoration: const InputDecoration(
-                    hintText: 'إدخال رمز الشحنة يدوياً',
-                    border: OutlineInputBorder(),
-                    filled: true,
-                    fillColor: Colors.white,
+              Card(
+                color: Colors.blue.shade50,
+                child: const Padding(
+                  padding: EdgeInsets.all(12.0),
+                  child: Text(
+                    'الحساب الشبكي: (أفقي × عمودي) - الكراتين الناقصة',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueDark),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber[700],
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                onPressed: () {
-                  if (_shipmentController.text.isNotEmpty) {
-                    _addShipment(_shipmentController.text, 'إدخال يدوي');
-                    _shipmentController.clear();
-                  }
-                },
-                child: const Text('إضافة', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _shipments.length,
-              itemBuilder: (context, index) {
-                final item = _shipments[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  child: ListTile(
-                    leading: const Icon(Icons.local_shipping, color: Colors.amber),
-                    title: Text(item['code']!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('${item['type']} • ${item['date']}'),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: item['status'] == 'مكتمل' ? Colors.green[100] : Colors.orange[100],
-                        borderRadius: BorderRadius.circular(8),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _horizontalController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'العدد الأفقي (مثال: 11)',
+                        border: OutlineInputBorder(),
                       ),
-                      child: Text(
-                        item['status']!,
-                        style: TextStyle(
-                          color: item['status'] == 'مكتمل' ? Colors.green[800] : Colors.orange[800],
-                          fontSize: 12,
-                        ),
-                      ),
+                      onChanged: (_) => _calculate(),
                     ),
                   ),
-                );
-              },
-            ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Text('×', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _verticalController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'العدد العمودي (مثال: 9)',
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (_) => _calculate(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _missingBoxesController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'عدد الكراتين الناقصة / المأخوذة (إن وجد)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.remove_circle_outline, color: Colors.red),
+                ),
+                onChanged: (_) => _calculate(),
+              ),
+              const SizedBox(height: 16),
+              const Text('نوع السلعة / سعة الكرتونة:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 5),
+              DropdownButtonFormField<int>(
+                value: _selectedPackSize,
+                decoration: const InputDecoration(border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: 1000, child: Text('أوراق عادية (1000 ورقة)')),
+                  DropdownMenuItem(value: 500, child: Text('كراتين (500 ورقة)')),
+                  DropdownMenuItem(value: 250, child: Text('أظرفة F3 / F4 (250 وحدة)')),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _selectedPackSize = val;
+                      _calculate();
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 25),
+              Card(
+                elevation: 4,
+                color: _missingCartons > 0 ? Colors.orange.shade50 : Colors.green.shade50,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(
+                    color: _missingCartons > 0 ? Colors.orange : Colors.green,
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      Text('إجمالي الكراتين الصافي: $_netCartons كرتونة',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      if (_missingCartons > 0)
+                        Text('(تم خصم $_missingCartons كرتونة ناقصة)',
+                            style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                      const Divider(),
+                      const Text('إجمالي الأوراق / الوحدات:', style: TextStyle(fontSize: 15)),
+                      Text('$_totalPapers',
+                          style: TextStyle(
+                            fontSize: 34,
+                            fontWeight: FontWeight.bold,
+                            color: _missingCartons > 0 ? Colors.orange.shade900 : Colors.green.shade900,
+                          )),
+                    ],
+                  ),
+                ),
+              )
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 2. شاشة مطابقة Bon de Commande والتنبيه من النقص
+class BonDeCommandeCheckScreen extends StatefulWidget {
+  const BonDeCommandeCheckScreen({super.key});
+
+  @override
+  State<BonDeCommandeCheckScreen> createState() => _BonDeCommandeCheckScreenState();
+}
+
+class _BonDeCommandeCheckScreenState extends State<BonDeCommandeCheckScreen> {
+  final TextEditingController _targetQuantityController = TextEditingController();
+  final TextEditingController _palletCountController = TextEditingController();
+  final TextEditingController _missingBoxesController = TextEditingController();
+
+  int _packSize = 1000;
+  int _calculatedTotal = 0;
+  int _targetQuantity = 0;
+  String _statusMessage = 'أدخل البيانات للتحقق من المطابقة';
+  Color _statusColor = Colors.grey;
+
+  void _checkMatching() {
+    _targetQuantity = int.tryParse(_targetQuantityController.text) ?? 0;
+    int totalCartons = int.tryParse(_palletCountController.text) ?? 0;
+    int missingCartons = int.tryParse(_missingBoxesController.text) ?? 0;
+
+    int actualCartons = totalCartons - missingCartons;
+    _calculatedTotal = actualCartons * _packSize;
+
+    setState(() {
+      if (_targetQuantity == 0 || totalCartons == 0) {
+        _statusMessage = 'رجاءً أدخل الكمية المطلوبة وعدد الكراتين';
+        _statusColor = Colors.grey;
+      } else if (_calculatedTotal == _targetQuantity) {
+        _statusMessage = '✅ مطابقة تامة! الكمية كاملة ومكافئة للطلب.';
+        _statusColor = Colors.green;
+      } else if (_calculatedTotal < _targetQuantity) {
+        int diff = _targetQuantity - _calculatedTotal;
+        _statusMessage = '⚠️ تنبيه: وجود نقص! الناقص: $diff وحدة (${diff ~/ _packSize} كرتونة). يُوصى بإرجاع الشحنة لتفادي المشاكل المحاسبية.';
+        _statusColor = Colors.red;
+      } else {
+        int diff = _calculatedTotal - _targetQuantity;
+        _statusMessage = 'ℹ️ تنبيه: الكمية الواردة أكبر من المطلوب بـ: $diff وحدة.';
+        _statusColor = Colors.orange;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('التحقق من Bon de Commande'),
+        backgroundColor: Colors.blueAccent,
+        foregroundColor: Colors.white,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAlignment.stretch,
+            children: [
+              TextField(
+                controller: _targetQuantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'الكمية المكتوبة في Bon de Commande',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.assignment),
+                ),
+                onChanged: (_) => _checkMatching(),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: _packSize,
+                decoration: const InputDecoration(
+                  labelText: 'نوع السلعة / سعة الكرتونة',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 1000, child: Text('أوراق عادية (1000 ورقة)')),
+                  DropdownMenuItem(value: 500, child: Text('كراتين (500 ورقة)')),
+                  DropdownMenuItem(value: 250, child: Text('أظرفة F3/F4 (250 وحدة)')),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    _packSize = val;
+                    _checkMatching();
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _palletCountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'عدد الكراتين المفترضة',
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (_) => _checkMatching(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _missingBoxesController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'عدد الناقص منها',
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (_) => _checkMatching(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 25),
+              Card(
+                color: _statusColor.withOpacity(0.12),
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(color: _statusColor, width: 2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      Text(
+                        'الكمية الفعلية المحسوبة: $_calculatedTotal',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _statusMessage,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 15, color: _statusColor, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 3. شاشة جدول حصص الولايات والتتشطيب الرقمي
+class QuotaTableScreen extends StatefulWidget {
+  const QuotaTableScreen({super.key});
+
+  @override
+  State<QuotaTableScreen> createState() => _QuotaTableScreenState();
+}
+
+class _QuotaTableScreenState extends State<QuotaTableScreen> {
+  final List<Map<String, dynamic>> _provinces = [
+    {'code': '01', 'name': 'أدرار', 'received': false, 'date': ''},
+    {'code': '02', 'name': 'الشلف', 'received': false, 'date': ''},
+    {'code': '16', 'name': 'الجزائر', 'received': true, 'date': '2026-10-18'},
+    {'code': '25', 'name': 'قسنطينة', 'received': false, 'date': ''},
+    {'code': '31', 'name': 'وهران', 'received': false, 'date': ''},
+  ];
+
+  void _toggleStatus(int index) {
+    setState(() {
+      _provinces[index]['received'] = !_provinces[index]['received'];
+      if (_provinces[index]['received']) {
+        _provinces[index]['date'] = DateTime.now().toString().split(' ')[0];
+      } else {
+        _provinces[index]['date'] = '';
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('جدول الحصص (الباب الرقمي)'),
+        backgroundColor: Colors.blueAccent,
+        foregroundColor: Colors.white,
+      ),
+      body: ListView.builder(
+        itemCount: _provinces.length,
+        itemBuilder: (context, index) {
+          final prov = _provinces[index];
+          final bool isDone = prov['received'];
+          return Card(
+            color: isDone ? Colors.green.shade50 : Colors.white,
+            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: isDone ? Colors.green : Colors.grey,
+                foregroundColor: Colors.white,
+                child: Text(prov['code']),
+              ),
+              title: Text(
+                prov['name'],
+                style: TextStyle(
+                  decoration: isDone ? TextDecoration.lineThrough : TextDecoration.none,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(isDone ? 'تم الاستلام بتاريخ: ${prov['date']}' : 'لم تستلم الحصة بعد'),
+              trailing: Checkbox(
+                value: isDone,
+                onChanged: (_) => _toggleStatus(index),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// 4. شاشة السجل الرقمي (Registre Virtuel)
+class RegistreScreen extends StatelessWidget {
+  const RegistreScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('السجل الرقمي (Registre)'),
+        backgroundColor: Colors.blueAccent,
+        foregroundColor: Colors.white,
+      ),
+      body: const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Text(
+            'هنا يتم تنظيم البيانات كجدول السجل الورقي لتسهيل تدوينها يدوياً في كراس الريجيست حمايةً من انقطاع الكهرباء.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
       ),
     );
   }
