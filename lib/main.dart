@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const AlgeriaPostWMSApp());
@@ -34,17 +33,12 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _pinController = TextEditingController();
 
-  Future<void> _login() async {
+  void _login() {
     if (_pinController.text.isNotEmpty) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_name', _usernameController.text.isEmpty ? 'أمناء المخزن' : _usernameController.text);
-      
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainHomeScreen()),
-        );
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainHomeScreen()),
+      );
     }
   }
 
@@ -287,7 +281,7 @@ class _UpwPendingScreenState extends State<UpwPendingScreen> {
   }
 }
 
-/// 2. جدول الولايات بالأرقام والأسماء مع التخزين المحلي
+/// 2. جدول الولايات الـ 69 بأسمائها وأرقامها
 class QuotaTableScreen extends StatefulWidget {
   const QuotaTableScreen({super.key});
 
@@ -313,7 +307,6 @@ class _QuotaTableScreenState extends State<QuotaTableScreen> {
   void initState() {
     super.initState();
     _initProvinces();
-    _loadSavedData();
   }
 
   void _initProvinces() {
@@ -330,20 +323,7 @@ class _QuotaTableScreenState extends State<QuotaTableScreen> {
     });
   }
 
-  Future<void> _loadSavedData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      for (int i = 0; i < _provinces.length; i++) {
-        bool isRec = prefs.getBool('prov_${i}_received') ?? false;
-        String dateStr = prefs.getString('prov_${i}_date') ?? '';
-        _provinces[i]['received'] = isRec;
-        _provinces[i]['date'] = dateStr;
-      }
-    });
-  }
-
-  Future<void> _toggleStatus(int index) async {
-    final prefs = await SharedPreferences.getInstance();
+  void _toggleStatus(int index) {
     setState(() {
       _provinces[index]['received'] = !_provinces[index]['received'];
       if (_provinces[index]['received']) {
@@ -352,8 +332,6 @@ class _QuotaTableScreenState extends State<QuotaTableScreen> {
         _provinces[index]['date'] = '';
       }
     });
-    await prefs.setBool('prov_${index}_received', _provinces[index]['received']);
-    await prefs.setString('prov_${index}_date', _provinces[index]['date']);
   }
 
   @override
@@ -449,7 +427,7 @@ class _PalletCalculatorScreenState extends State<PalletCalculatorScreen> {
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Card(
                 color: Colors.blue.shade50,
