@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(const AlgeriaPostWMSApp());
@@ -154,7 +152,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.pending_actions), label: 'حصص UPW'),
           BottomNavigationBarItem(icon: Icon(Icons.table_chart), label: 'جدول الحصص'),
           BottomNavigationBarItem(icon: Icon(Icons.calculate), label: 'حاسبة الباليطة'),
-          BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: 'مطابقة وتصوير'),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment_turned_in), label: 'مطابقة الطلب'),
         ],
       ),
     );
@@ -289,7 +287,7 @@ class _UpwPendingScreenState extends State<UpwPendingScreen> {
   }
 }
 
-/// 2. جدول الولايات كاملاً بالأرقام والأسماء مع حفظ البيانات في الهاتف
+/// 2. جدول الولايات بالأرقام والأسماء مع التخزين المحلي
 class QuotaTableScreen extends StatefulWidget {
   const QuotaTableScreen({super.key});
 
@@ -298,7 +296,6 @@ class QuotaTableScreen extends StatefulWidget {
 }
 
 class _QuotaTableScreenState extends State<QuotaTableScreen> {
-  // قائمة الولايات الرسمية مع أسمائها كاملة
   final List<String> _provinceNames = [
     'أدرار', 'الشلف', 'الأغواط', 'أم البواقي', 'باتنة', 'بجاية', 'بسكرة', 'بشار',
     'البليدة', 'البويرة', 'تمنراست', 'تبسة', 'تلمسان', 'تيارت', 'تيزي وزو', 'الجزائر',
@@ -323,7 +320,7 @@ class _QuotaTableScreenState extends State<QuotaTableScreen> {
     _provinces = List.generate(69, (index) {
       int code = index + 1;
       String codeStr = code < 10 ? '0$code' : '$code';
-      String name = index < _provinceNames.length ? _provinceNames[index] : 'ولاية/مركز مستحدث $codeStr';
+      String name = index < _provinceNames.length ? _provinceNames[index] : 'مركز مستحدث $codeStr';
       return {
         'code': codeStr,
         'name': 'UPW $codeStr - $name',
@@ -577,74 +574,15 @@ class _PalletCalculatorScreenState extends State<PalletCalculatorScreen> {
   }
 }
 
-/// 4. شاشة مطابقة Bon de Commande مع خاصية التصوير بالكاميرا
-class BonDeCommandeCheckScreen extends StatefulWidget {
+/// 4. شاشة مطابقة Bon de Commande
+class BonDeCommandeCheckScreen extends StatelessWidget {
   const BonDeCommandeCheckScreen({super.key});
-
-  @override
-  State<BonDeCommandeCheckScreen> createState() => _BonDeCommandeCheckScreenState();
-}
-
-class _BonDeCommandeCheckScreenState extends State<BonDeCommandeCheckScreen> {
-  File? _capturedImage;
-  final ImagePicker _picker = ImagePicker();
-
-  Future<void> _takePhoto() async {
-    final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
-    if (photo != null) {
-      setState(() {
-        _capturedImage = File(photo.path);
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('مطابقة أذونات الطلب والتصوير'),
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAlignment.stretch,
-          children: [
-            ElevatedButton.icon(
-              onPressed: _takePhoto,
-              icon: const Icon(Icons.camera_alt),
-              label: const Text('التقاط صورة للباليطة / للشحنة الناقصة'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.all(15),
-              ),
-            ),
-            const SizedBox(height: 20),
-            if (_capturedImage != null) ...[
-              const Text('الصورة الملتقطة للتوثيق:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.file(_capturedImage!, fit: BoxFit.cover),
-                ),
-              ),
-            ] else
-              const Expanded(
-                child: Center(
-                  child: Text(
-                    'لم يتم التقاط صورة بعد.\nاضغط على الزر أعلاه لفتح كاميرا الهاتف والتصوير.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+      appBar: AppBar(title: const Text('مطابقة أذونات الطلب'), backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
+      body: const Center(child: Text('شاشة مطابقة الـ Bon de Commande')),
     );
   }
 }
-جت
