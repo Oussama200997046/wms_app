@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 void main() {
   runApp(const AlgeriaPostWMSApp());
@@ -13,7 +12,7 @@ class AlgeriaPostWMSApp extends StatefulWidget {
 }
 
 class _AlgeriaPostWMSAppState extends State<AlgeriaPostWMSApp> {
-  String _currentLang = 'AR'; // AR, FR, EN
+  String _currentLang = 'AR';
 
   void _changeLanguage(String lang) {
     setState(() {
@@ -38,7 +37,6 @@ class _AlgeriaPostWMSAppState extends State<AlgeriaPostWMSApp> {
   }
 }
 
-/// شاشة تسجيل الدخول مع تقييد الإدخال بالأحرف والرموز غير العربية
 class AuthCheckScreen extends StatefulWidget {
   final String currentLang;
   final Function(String) onLangChanged;
@@ -63,40 +61,55 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
       'userLabel': 'اسم المستخدم (بالفرنسية/اللاتينية فقط)',
       'pinLabel': 'كلمة السر / رمز PIN',
       'loginBtn': 'تسجيل الدخول',
-      'errorEmpty': 'يرجى إدخال اسم المستخدم وكلمة السر',
+      'errorArabic': 'يجب أن يكون اسم المستخدم وكلمة السر باللغة الفرنسية/اللاتينية وخالياً من العربية!',
+      'errorEmpty': 'يرجى ملء كافة الحقول',
     },
     'FR': {
       'title': 'Gestion des Stocks - Algérie Poste',
       'userLabel': 'Nom d\'utilisateur (En Français uniquement)',
       'pinLabel': 'Mot de passe / Code PIN',
       'loginBtn': 'Se Connecter',
-      'errorEmpty': 'Veuillez saisir le nom d\'utilisateur et le mot de passe',
+      'errorArabic': 'Le nom d\'utilisateur et le mot de passe doivent être en latin/français!',
+      'errorEmpty': 'Veuillez remplir tous les champs',
     },
     'EN': {
       'title': 'Warehouse Management - Algeria Post',
       'userLabel': 'Username (Latin/French characters only)',
       'pinLabel': 'Password / PIN',
       'loginBtn': 'Login',
-      'errorEmpty': 'Please enter username and password',
+      'errorArabic': 'Username and password must be in Latin/French characters!',
+      'errorEmpty': 'Please fill in all fields',
     },
   };
 
+  bool _containsArabic(String text) {
+    return RegExp(r'[\u0600-\u06FF]').hasMatch(text);
+  }
+
   void _login() {
-    if (_usernameController.text.trim().isNotEmpty && _pinController.text.trim().isNotEmpty) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => MainHomeScreen(currentLang: widget.currentLang),
-        ),
-      );
-    } else {
+    String user = _usernameController.text.trim();
+    String pin = _pinController.text.trim();
+
+    if (user.isEmpty || pin.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_texts[widget.currentLang]!['errorEmpty']!),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(_texts[widget.currentLang]!['errorEmpty']!), backgroundColor: Colors.red),
       );
+      return;
     }
+
+    if (_containsArabic(user) || _containsArabic(pin)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_texts[widget.currentLang]!['errorArabic']!), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MainHomeScreen(currentLang: widget.currentLang),
+      ),
+    );
   }
 
   @override
@@ -146,12 +159,8 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 20),
-                        // اسم المستخدم يمنع الأحرف العربية نهائياً
                         TextField(
                           controller: _usernameController,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.deny(RegExp(r'[\u0600-\u06FF]')),
-                          ],
                           decoration: InputDecoration(
                             labelText: t['userLabel'],
                             hintText: 'ex: agent_magasin',
@@ -160,13 +169,9 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        // كلمة السر تمنع الأحرف العربية نهائياً
                         TextField(
                           controller: _pinController,
                           obscureText: true,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.deny(RegExp(r'[\u0600-\u06FF]')),
-                          ],
                           decoration: InputDecoration(
                             labelText: t['pinLabel'],
                             hintText: 'Pass1234',
@@ -253,7 +258,6 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   }
 }
 
-/// 1. قائمة حصص UPW المتبقية
 class UpwPendingScreen extends StatefulWidget {
   const UpwPendingScreen({super.key});
 
@@ -381,7 +385,6 @@ class _UpwPendingScreenState extends State<UpwPendingScreen> {
   }
 }
 
-/// 2. جدول الولايات الـ 69 مع ربط الاسم الحقيقي
 class QuotaTableScreen extends StatefulWidget {
   const QuotaTableScreen({super.key});
 
@@ -479,7 +482,6 @@ class _QuotaTableScreenState extends State<QuotaTableScreen> {
   }
 }
 
-/// 3. حاسبة الباليطة والتلبة
 class PalletCalculatorScreen extends StatefulWidget {
   const PalletCalculatorScreen({super.key});
 
@@ -530,7 +532,7 @@ class _PalletCalculatorScreenState extends State<PalletCalculatorScreen> {
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Card(
                 color: Colors.blue.shade50,
@@ -655,7 +657,6 @@ class _PalletCalculatorScreenState extends State<PalletCalculatorScreen> {
   }
 }
 
-/// 4. شاشة مطابقة Bon de Commande
 class BonDeCommandeCheckScreen extends StatelessWidget {
   const BonDeCommandeCheckScreen({super.key});
 
