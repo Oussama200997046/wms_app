@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(const AlgeriaPostWMSApp());
@@ -152,7 +154,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.pending_actions), label: 'حصص UPW'),
           BottomNavigationBarItem(icon: Icon(Icons.table_chart), label: 'جدول الحصص'),
           BottomNavigationBarItem(icon: Icon(Icons.calculate), label: 'حاسبة الباليطة'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_turned_in), label: 'مطابقة الطلب'),
+          BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: 'مطابقة وتصوير'),
         ],
       ),
     );
@@ -177,7 +179,7 @@ class _UpwPendingScreenState extends State<UpwPendingScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('إضافة حظيرة/حصة متبقية لولايات UPW'),
+        title: const Text('إضافة حصة متبقية لولايات UPW'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -287,7 +289,119 @@ class _UpwPendingScreenState extends State<UpwPendingScreen> {
   }
 }
 
-/// 2. حاسبة الباليطة والتلبة مع السلع المزدوجة والكتب
+/// 2. جدول الولايات كاملاً بالأرقام والأسماء مع حفظ البيانات في الهاتف
+class QuotaTableScreen extends StatefulWidget {
+  const QuotaTableScreen({super.key});
+
+  @override
+  State<QuotaTableScreen> createState() => _QuotaTableScreenState();
+}
+
+class _QuotaTableScreenState extends State<QuotaTableScreen> {
+  // قائمة الولايات الرسمية مع أسمائها كاملة
+  final List<String> _provinceNames = [
+    'أدرار', 'الشلف', 'الأغواط', 'أم البواقي', 'باتنة', 'بجاية', 'بسكرة', 'بشار',
+    'البليدة', 'البويرة', 'تمنراست', 'تبسة', 'تلمسان', 'تيارت', 'تيزي وزو', 'الجزائر',
+    'الجلفة', 'جيجل', 'سطيف', 'سعيدة', 'سكيكدة', 'سيدي بلعباس', 'عنابة', 'قالمة',
+    'قسنطينة', 'المدية', 'مستغانم', 'المسيلة', 'معسكر', 'ورقلة', 'وهران', 'البيض',
+    'إليزي', 'برج بوعريريج', 'بومرداس', 'الطارف', 'تندوف', 'تيسمسيلت', 'الوادي', 'خنشلة',
+    'سوق أهراس', 'تيبازة', 'ميلة', 'عين الدفلى', 'النعامة', 'عين تموشنت', 'غرداية', 'غليزان',
+    'تيميمون', 'برج باجي مختار', 'أولاد جلال', 'بني عباس', 'إن صالح', 'إن قزام', 'تقرت',
+    'جانت', 'المغير', 'المنيعة'
+  ];
+
+  late List<Map<String, dynamic>> _provinces;
+
+  @override
+  void initState() {
+    super.initState();
+    _initProvinces();
+    _loadSavedData();
+  }
+
+  void _initProvinces() {
+    _provinces = List.generate(69, (index) {
+      int code = index + 1;
+      String codeStr = code < 10 ? '0$code' : '$code';
+      String name = index < _provinceNames.length ? _provinceNames[index] : 'ولاية/مركز مستحدث $codeStr';
+      return {
+        'code': codeStr,
+        'name': 'UPW $codeStr - $name',
+        'received': false,
+        'date': ''
+      };
+    });
+  }
+
+  Future<void> _loadSavedData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      for (int i = 0; i < _provinces.length; i++) {
+        bool isRec = prefs.getBool('prov_${i}_received') ?? false;
+        String dateStr = prefs.getString('prov_${i}_date') ?? '';
+        _provinces[i]['received'] = isRec;
+        _provinces[i]['date'] = dateStr;
+      }
+    });
+  }
+
+  Future<void> _toggleStatus(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _provinces[index]['received'] = !_provinces[index]['received'];
+      if (_provinces[index]['received']) {
+        _provinces[index]['date'] = DateTime.now().toString().split(' ')[0];
+      } else {
+        _provinces[index]['date'] = '';
+      }
+    });
+    await prefs.setBool('prov_${index}_received', _provinces[index]['received']);
+    await prefs.setString('prov_${index}_date', _provinces[index]['date']);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('جدول الحصص العامة (${_provinces.length} UPW)'),
+        backgroundColor: Colors.blueAccent,
+        foregroundColor: Colors.white,
+      ),
+      body: ListView.builder(
+        itemCount: _provinces.length,
+        itemBuilder: (context, index) {
+          final prov = _provinces[index];
+          final bool isDone = prov['received'];
+          return Card(
+            color: isDone ? Colors.green.shade50 : Colors.white,
+            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: isDone ? Colors.green : Colors.grey,
+                foregroundColor: Colors.white,
+                child: Text(prov['code']),
+              ),
+              title: Text(
+                prov['name'],
+                style: TextStyle(
+                  decoration: isDone ? TextDecoration.lineThrough : TextDecoration.none,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(isDone ? 'تم التسليم: ${prov['date']}' : 'لم يتم التسليم بعد'),
+              trailing: Checkbox(
+                value: isDone,
+                onChanged: (_) => _toggleStatus(index),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// 3. حاسبة الباليطة والتلبة مع السلع المزدوجة والكتب
 class PalletCalculatorScreen extends StatefulWidget {
   const PalletCalculatorScreen({super.key});
 
@@ -338,7 +452,7 @@ class _PalletCalculatorScreenState extends State<PalletCalculatorScreen> {
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAlignment.stretch,
             children: [
               Card(
                 color: Colors.blue.shade50,
@@ -463,88 +577,74 @@ class _PalletCalculatorScreenState extends State<PalletCalculatorScreen> {
   }
 }
 
-/// 3. جدول الـ 69 ولاية بصيغة UPW
-class QuotaTableScreen extends StatefulWidget {
-  const QuotaTableScreen({super.key});
+/// 4. شاشة مطابقة Bon de Commande مع خاصية التصوير بالكاميرا
+class BonDeCommandeCheckScreen extends StatefulWidget {
+  const BonDeCommandeCheckScreen({super.key});
 
   @override
-  State<QuotaTableScreen> createState() => _QuotaTableScreenState();
+  State<BonDeCommandeCheckScreen> createState() => _BonDeCommandeCheckScreenState();
 }
 
-class _QuotaTableScreenState extends State<QuotaTableScreen> {
-  final List<Map<String, dynamic>> _provinces = List.generate(69, (index) {
-    int code = index + 1;
-    String codeStr = code < 10 ? '0$code' : '$code';
-    return {
-      'code': codeStr,
-      'name': 'UPW $codeStr',
-      'received': false,
-      'date': ''
-    };
-  });
+class _BonDeCommandeCheckScreenState extends State<BonDeCommandeCheckScreen> {
+  File? _capturedImage;
+  final ImagePicker _picker = ImagePicker();
 
-  void _toggleStatus(int index) {
-    setState(() {
-      _provinces[index]['received'] = !_provinces[index]['received'];
-      if (_provinces[index]['received']) {
-        _provinces[index]['date'] = DateTime.now().toString().split(' ')[0];
-      } else {
-        _provinces[index]['date'] = '';
-      }
-    });
+  Future<void> _takePhoto() async {
+    final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+    if (photo != null) {
+      setState(() {
+        _capturedImage = File(photo.path);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('جدول الحصص العامة (${_provinces.length} ولاية/مركز UPW)'),
+        title: const Text('مطابقة أذونات الطلب والتصوير'),
         backgroundColor: Colors.blueAccent,
         foregroundColor: Colors.white,
       ),
-      body: ListView.builder(
-        itemCount: _provinces.length,
-        itemBuilder: (context, index) {
-          final prov = _provinces[index];
-          final bool isDone = prov['received'];
-          return Card(
-            color: isDone ? Colors.green.shade50 : Colors.white,
-            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: isDone ? Colors.green : Colors.grey,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAlignment.stretch,
+          children: [
+            ElevatedButton.icon(
+              onPressed: _takePhoto,
+              icon: const Icon(Icons.camera_alt),
+              label: const Text('التقاط صورة للباليطة / للشحنة الناقصة'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
                 foregroundColor: Colors.white,
-                child: Text(prov['code']),
-              ),
-              title: Text(
-                prov['name'],
-                style: TextStyle(
-                  decoration: isDone ? TextDecoration.lineThrough : TextDecoration.none,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              subtitle: Text(isDone ? 'تم التسليم: ${prov['date']}' : 'لم يتم التسليم بعد'),
-              trailing: Checkbox(
-                value: isDone,
-                onChanged: (_) => _toggleStatus(index),
+                padding: const EdgeInsets.all(15),
               ),
             ),
-          );
-        },
+            const SizedBox(height: 20),
+            if (_capturedImage != null) ...[
+              const Text('الصورة الملتقطة للتوثيق:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.file(_capturedImage!, fit: BoxFit.cover),
+                ),
+              ),
+            ] else
+              const Expanded(
+                child: Center(
+                  child: Text(
+                    'لم يتم التقاط صورة بعد.\nاضغط على الزر أعلاه لفتح كاميرا الهاتف والتصوير.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
-
-/// 4. شاشة مطابقة Bon de Commande
-class BonDeCommandeCheckScreen extends StatelessWidget {
-  const BonDeCommandeCheckScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('مطابقة أذونات الطلب'), backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
-      body: const Center(child: Text('شاشة مطابقة الـ Bon de Commande')),
-    );
-  }
-}
+جت
