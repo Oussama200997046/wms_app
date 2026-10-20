@@ -1,29 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const AlgeriaPostWMSApp());
 }
 
-class AlgeriaPostWMSApp extends StatelessWidget {
+class AlgeriaPostWMSApp extends StatefulWidget {
   const AlgeriaPostWMSApp({super.key});
+
+  @override
+  State<AlgeriaPostWMSApp> createState() => _AlgeriaPostWMSAppState();
+}
+
+class _AlgeriaPostWMSAppState extends State<AlgeriaPostWMSApp> {
+  String _currentLang = 'AR'; // AR, FR, EN
+
+  void _changeLanguage(String lang) {
+    setState(() {
+      _currentLang = lang;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'نظام إدارة المستودعات - بريد الجزائر',
+      title: 'Algeria Post WMS',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: const AuthCheckScreen(),
+      home: AuthCheckScreen(
+        currentLang: _currentLang,
+        onLangChanged: _changeLanguage,
+      ),
     );
   }
 }
 
-/// شاشة تسجيل الدخول
+/// شاشة تسجيل الدخول مع تقييد الإدخال بالأحرف والرموز غير العربية
 class AuthCheckScreen extends StatefulWidget {
-  const AuthCheckScreen({super.key});
+  final String currentLang;
+  final Function(String) onLangChanged;
+
+  const AuthCheckScreen({
+    super.key,
+    required this.currentLang,
+    required this.onLangChanged,
+  });
 
   @override
   State<AuthCheckScreen> createState() => _AuthCheckScreenState();
@@ -33,70 +57,135 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _pinController = TextEditingController();
 
+  final Map<String, Map<String, String>> _texts = {
+    'AR': {
+      'title': 'مرفق إدارة المستودعات - بريد الجزائر',
+      'userLabel': 'اسم المستخدم (بالفرنسية/اللاتينية فقط)',
+      'pinLabel': 'كلمة السر / رمز PIN',
+      'loginBtn': 'تسجيل الدخول',
+      'errorEmpty': 'يرجى إدخال اسم المستخدم وكلمة السر',
+    },
+    'FR': {
+      'title': 'Gestion des Stocks - Algérie Poste',
+      'userLabel': 'Nom d\'utilisateur (En Français uniquement)',
+      'pinLabel': 'Mot de passe / Code PIN',
+      'loginBtn': 'Se Connecter',
+      'errorEmpty': 'Veuillez saisir le nom d\'utilisateur et le mot de passe',
+    },
+    'EN': {
+      'title': 'Warehouse Management - Algeria Post',
+      'userLabel': 'Username (Latin/French characters only)',
+      'pinLabel': 'Password / PIN',
+      'loginBtn': 'Login',
+      'errorEmpty': 'Please enter username and password',
+    },
+  };
+
   void _login() {
-    if (_pinController.text.isNotEmpty) {
+    if (_usernameController.text.trim().isNotEmpty && _pinController.text.trim().isNotEmpty) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MainHomeScreen()),
+        MaterialPageRoute(
+          builder: (context) => MainHomeScreen(currentLang: widget.currentLang),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_texts[widget.currentLang]!['errorEmpty']!),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.blue.shade50,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Center(
-            child: SingleChildScrollView(
-              child: Card(
-                elevation: 6,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.inventory_2, size: 70, color: Colors.blueAccent),
-                      const SizedBox(height: 15),
-                      const Text(
-                        'مرفق إدارة المستودعات - بريد الجزائر',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: _usernameController,
-                        decoration: const InputDecoration(
-                          labelText: 'اسم الموظف / أمين المخزن',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person),
+    var t = _texts[widget.currentLang]!;
+    bool isRtl = widget.currentLang == 'AR';
+
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: Colors.blue.shade50,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.language, color: Colors.blueAccent, size: 28),
+              onSelected: (String lang) {
+                widget.onLangChanged(lang);
+              },
+              itemBuilder: (BuildContext context) => [
+                const PopupMenuItem(value: 'AR', child: Text('العربية (Arabic)')),
+                const PopupMenuItem(value: 'FR', child: Text('Français (French)')),
+                const PopupMenuItem(value: 'EN', child: Text('English')),
+              ],
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Center(
+              child: SingleChildScrollView(
+                child: Card(
+                  elevation: 6,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.inventory_2, size: 70, color: Colors.blueAccent),
+                        const SizedBox(height: 15),
+                        Text(
+                          t['title']!,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _pinController,
-                        obscureText: true,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'رمز الدخول / كلمة السر',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.lock),
+                        const SizedBox(height: 20),
+                        // اسم المستخدم يمنع الأحرف العربية نهائياً
+                        TextField(
+                          controller: _usernameController,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.deny(RegExp(r'[\u0600-\u06FF]')),
+                          ],
+                          decoration: InputDecoration(
+                            labelText: t['userLabel'],
+                            hintText: 'ex: agent_magasin',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.person),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _login,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(50),
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
+                        const SizedBox(height: 12),
+                        // كلمة السر تمنع الأحرف العربية نهائياً
+                        TextField(
+                          controller: _pinController,
+                          obscureText: true,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.deny(RegExp(r'[\u0600-\u06FF]')),
+                          ],
+                          decoration: InputDecoration(
+                            labelText: t['pinLabel'],
+                            hintText: 'Pass1234',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.lock),
+                          ),
                         ),
-                        child: const Text('تسجيل الدخول', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _login,
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(50),
+                            backgroundColor: Colors.blueAccent,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text(t['loginBtn']!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -109,7 +198,8 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
 }
 
 class MainHomeScreen extends StatefulWidget {
-  const MainHomeScreen({super.key});
+  final String currentLang;
+  const MainHomeScreen({super.key, required this.currentLang});
 
   @override
   State<MainHomeScreen> createState() => _MainHomeScreenState();
@@ -118,36 +208,46 @@ class MainHomeScreen extends StatefulWidget {
 class _MainHomeScreenState extends State<MainHomeScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const UpwPendingScreen(), 
-    const QuotaTableScreen(),
-    const PalletCalculatorScreen(),
-    const BonDeCommandeCheckScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blueAccent,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.pending_actions), label: 'حصص UPW'),
-          BottomNavigationBarItem(icon: Icon(Icons.table_chart), label: 'جدول الحصص'),
-          BottomNavigationBarItem(icon: Icon(Icons.calculate), label: 'حاسبة الباليطة'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_turned_in), label: 'مطابقة الطلب'),
-        ],
+    bool isRtl = widget.currentLang == 'AR';
+
+    final List<Widget> _screens = [
+      const UpwPendingScreen(), 
+      const QuotaTableScreen(),
+      const PalletCalculatorScreen(),
+      const BonDeCommandeCheckScreen(),
+    ];
+
+    String labelPending = widget.currentLang == 'AR' ? 'حصص UPW' : (widget.currentLang == 'FR' ? 'Quotas UPW' : 'UPW Quotas');
+    String labelTable = widget.currentLang == 'AR' ? 'جدول الحصص' : (widget.currentLang == 'FR' ? 'Tableau' : 'Table');
+    String labelCalc = widget.currentLang == 'AR' ? 'حاسبة الباليطة' : (widget.currentLang == 'FR' ? 'Calcul Palette' : 'Pallet Calc');
+    String labelCheck = widget.currentLang == 'AR' ? 'مطابقة الطلب' : (widget.currentLang == 'FR' ? 'Vérification' : 'Verification');
+
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: _screens,
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _selectedIndex,
+          selectedItemColor: Colors.blueAccent,
+          unselectedItemColor: Colors.grey,
+          onTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          items: [
+            BottomNavigationBarItem(icon: const Icon(Icons.pending_actions), label: labelPending),
+            BottomNavigationBarItem(icon: const Icon(Icons.table_chart), label: labelTable),
+            BottomNavigationBarItem(icon: const Icon(Icons.calculate), label: labelCalc),
+            BottomNavigationBarItem(icon: const Icon(Icons.assignment_turned_in), label: labelCheck),
+          ],
+        ),
       ),
     );
   }
@@ -281,7 +381,7 @@ class _UpwPendingScreenState extends State<UpwPendingScreen> {
   }
 }
 
-/// 2. جدول الولايات الـ 69 بأسمائها وأرقامها
+/// 2. جدول الولايات الـ 69 مع ربط الاسم الحقيقي
 class QuotaTableScreen extends StatefulWidget {
   const QuotaTableScreen({super.key});
 
@@ -313,10 +413,13 @@ class _QuotaTableScreenState extends State<QuotaTableScreen> {
     _provinces = List.generate(69, (index) {
       int code = index + 1;
       String codeStr = code < 10 ? '0$code' : '$code';
-      String name = index < _provinceNames.length ? _provinceNames[index] : 'مركز مستحدث $codeStr';
+      String provinceName = index < _provinceNames.length 
+          ? _provinceNames[index] 
+          : 'مركز توزيع إضافي $codeStr';
+
       return {
         'code': codeStr,
-        'name': 'UPW $codeStr - $name',
+        'name': 'UPW $codeStr - $provinceName',
         'received': false,
         'date': ''
       };
@@ -376,7 +479,7 @@ class _QuotaTableScreenState extends State<QuotaTableScreen> {
   }
 }
 
-/// 3. حاسبة الباليطة والتلبة مع السلع المزدوجة والكتب
+/// 3. حاسبة الباليطة والتلبة
 class PalletCalculatorScreen extends StatefulWidget {
   const PalletCalculatorScreen({super.key});
 
@@ -427,7 +530,7 @@ class _PalletCalculatorScreenState extends State<PalletCalculatorScreen> {
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAlignment.stretch,
             children: [
               Card(
                 color: Colors.blue.shade50,
